@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>AI Project Refiner - Updated</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ range(1, 10000) | random }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-robot"></i>
+                    <h1>AI Project Refiner</h1>
+                </div>
+                <p class="subtitle">Transform your project ideas into comprehensive roadmaps using AI collaboration</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="input-section">
+                <div class="input-container">
+                    <h2><i class="fas fa-lightbulb"></i> Project Description</h2>
+                    <textarea 
+                        id="projectInput" 
+                        placeholder="Describe your project requirements, goals, and constraints...
+
+Example:
+I want to build a mobile app for fitness tracking that includes:
+- User authentication and profiles
+- Workout logging with exercise database
+- Progress tracking with charts
+- Social features for sharing achievements
+- Integration with wearable devices
+- Offline capability for workouts
+
+Budget: $50,000
+Timeline: 6 months
+Team: 2 developers, 1 designer
+Target platforms: iOS and Android"
+                        rows="12"
+                    ></textarea>
+                    
+                    <div class="action-buttons">
+                        <button id="generateBtn" class="btn-primary">
+                            <i class="fas fa-rocket"></i>
+                            <span class="btn-text">Generate AI Roadmap</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Progress Section -->
+                    <div class="progress-section" id="progressSection" style="display: none;">
+                        <div class="progress-header">
+                            <h3><i class="fas fa-cogs"></i> <span id="progressTitle">Processing...</span></h3>
+                            <span class="progress-percentage" id="progressPercentage">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                        <div class="progress-status" id="progressStatus">Initializing AI agents...</div>
+                    </div>
+                </div>
+
+                <!-- Quick Examples -->
+                <div class="examples-section">
+                    <h3><i class="fas fa-star"></i> Quick Examples</h3>
+                    <div class="example-cards">
+                        <div class="example-card" data-example="mobile">
+                            <h4>Mobile App</h4>
+                            <p>Social media app with user profiles, photo sharing, messaging, and real-time notifications</p>
+                        </div>
+                        <div class="example-card" data-example="web">
+                            <h4>Web Platform</h4>
+                            <p>E-learning platform with course management, video streaming, quizzes, and certificates</p>
+                        </div>
+                        <div class="example-card" data-example="ai">
+                            <h4>AI System</h4>
+                            <p>AI-powered customer service chatbot with NLP, multi-language support, and analytics</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <!-- Roadmap Display -->
+                <div class="roadmap-container" id="roadmapContainer">
+                    <div class="roadmap-header">
+                        <h2><i class="fas fa-clipboard-list"></i> Your AI-Generated Project Roadmap</h2>
+                        <div class="roadmap-actions">
+                            <button id="downloadBtn" class="btn-download" style="display: none;">
+                                <i class="fas fa-download"></i>
+                                Download Roadmap
+                            </button>
+                        </div>
+                    </div>
+                    <div class="roadmap-content clickable-roadmap" id="roadmapContent" title="Click to download roadmap">
+                        <!-- Generated roadmap will appear here -->
+                    </div>
+                </div>
+
+                <!-- Processing Info -->
+                <div class="processing-info" id="processingInfo" style="display: none;">
+                    <h3><i class="fas fa-info-circle"></i> Processing Details</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Processing Type</span>
+                            <span class="info-value" id="processingType">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Total Tokens</span>
+                            <span class="info-value" id="totalTokens">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Processing Time</span>
+                            <span class="info-value" id="processingTime">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div class="loading-container" id="loadingContainer" style="display: none;">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>AI agents are collaborating on your roadmap...</p>
+                </div>
+            </div>
+
+            <!-- Error Message -->
+            <div class="error-container" id="errorContainer" style="display: none;">
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="errorText">An error occurred</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- System Info Sidebar -->
+        <aside class="sidebar">
+            <div class="system-info">
+                <h3><i class="fas fa-cog"></i> System Info</h3>
+                <div class="info-list">
+                    <div class="info-row">
+                        <strong>Strategist:</strong> GPT-4.1 (OpenAI)
+                    </div>
+                    <div class="info-row">
+                        <strong>Refiner:</strong> Gemini Pro (Google)
+                    </div>
+                    <div class="info-row">
+                        <strong>Iterations:</strong> 3 rounds of refinement
+                    </div>
+                    <div class="info-row">
+                        <strong>API Keys:</strong> Loaded from .env file
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}?v={{ range(1, 10000) | random }}"></script>
+</body>
+</html>

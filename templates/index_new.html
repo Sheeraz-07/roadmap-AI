@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>AI Project Refiner - New Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Inline CSS to avoid caching issues */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            grid-template-rows: auto 1fr;
+            grid-template-areas: 
+                "header sidebar"
+                "main sidebar";
+            min-height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .header {
+            grid-area: header;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header-content {
+            text-align: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .logo i {
+            font-size: 2.5rem;
+            color: #667eea;
+        }
+
+        .logo h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .main-content {
+            grid-area: main;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .input-container h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .input-container h2 i {
+            color: #667eea;
+        }
+
+        #projectInput {
+            width: 100%;
+            min-height: 300px;
+            padding: 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+            background: #fafbfc;
+        }
+
+        #projectInput:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn-primary {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-section {
+            margin-top: 20px;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.1);
+            display: none;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .progress-header h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .progress-header h3 i {
+            color: #667eea;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-percentage {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-status {
+            font-size: 0.9rem;
+            color: #64748b;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .results-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: none;
+        }
+
+        .roadmap-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .roadmap-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .btn-download {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #10b981;
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+            50% { box-shadow: 0 6px 25px rgba(16, 185, 129, 0.5); }
+            100% { box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+        }
+
+        .btn-download:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .roadmap-content {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 25px;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .sidebar {
+            grid-area: sidebar;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .system-info h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .system-info h3 i {
+            color: #667eea;
+        }
+
+        .info-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .info-row {
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .info-row strong {
+            color: #374151;
+        }
+
+        .error-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .error-message {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            color: #dc2626;
+            font-weight: 500;
+        }
+
+        .error-message i {
+            font-size: 1.5rem;
+        }
+
+        .download-confirmation {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .download-confirmation.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .download-confirmation i {
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-areas: 
+                    "header"
+                    "main"
+                    "sidebar";
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-robot"></i>
+                    <h1>AI Project Refiner</h1>
+                </div>
+                <p class="subtitle">Transform your project ideas into comprehensive roadmaps using AI collaboration</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="input-section">
+                <div class="input-container">
+                    <h2><i class="fas fa-lightbulb"></i> Project Description</h2>
+                    <textarea 
+                        id="projectInput" 
+                        placeholder="Describe your project requirements, goals, and constraints...
+
+Example:
+I want to build a mobile app for fitness tracking that includes:
+- User authentication and profiles
+- Workout logging with exercise database
+- Progress tracking with charts
+- Social features for sharing achievements
+- Integration with wearable devices
+- Offline capability for workouts
+
+Budget: $50,000
+Timeline: 6 months
+Team: 2 developers, 1 designer
+Target platforms: iOS and Android"
+                        rows="12"
+                    ></textarea>
+                    
+                    <div class="action-buttons">
+                        <button id="generateBtn" class="btn-primary">
+                            <i class="fas fa-rocket"></i>
+                            <span class="btn-text">Generate AI Roadmap</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Progress Section -->
+                    <div class="progress-section" id="progressSection">
+                        <div class="progress-header">
+                            <h3><i class="fas fa-cogs"></i> <span id="progressTitle">Processing...</span></h3>
+                            <span class="progress-percentage" id="progressPercentage">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                        <div class="progress-status" id="progressStatus">Initializing AI agents...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection">
+                <div class="roadmap-container" id="roadmapContainer">
+                    <div class="roadmap-header">
+                        <h2><i class="fas fa-clipboard-list"></i> Your AI-Generated Project Roadmap</h2>
+                        <button id="downloadBtn" class="btn-download">
+                            <i class="fas fa-download"></i>
+                            Download Roadmap
+                        </button>
+                    </div>
+                    <div class="roadmap-content" id="roadmapContent">
+                        <!-- Generated roadmap will appear here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Message -->
+            <div class="error-container" id="errorContainer">
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="errorText">An error occurred</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- System Info Sidebar -->
+        <aside class="sidebar">
+            <div class="system-info">
+                <h3><i class="fas fa-cog"></i> System Info</h3>
+                <div class="info-list">
+                    <div class="info-row">
+                        <strong>Strategist:</strong> GPT-4.1 (OpenAI)
+                    </div>
+                    <div class="info-row">
+                        <strong>Refiner:</strong> Gemini Flash (Google)
+                    </div>
+                    <div class="info-row">
+                        <strong>Iterations:</strong> 3 rounds of refinement
+                    </div>
+                    <div class="info-row">
+                        <strong>API Keys:</strong> Loaded from .env file
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // Inline JavaScript to avoid caching issues
+        class ProjectRefinerApp {
+            constructor() {
+                this.initializeElements();
+                this.bindEvents();
+            }
+
+            initializeElements() {
+                this.projectInput = document.getElementById('projectInput');
+                this.generateBtn = document.getElementById('generateBtn');
+                this.downloadBtn = document.getElementById('downloadBtn');
+                
+                this.resultsSection = document.getElementById('resultsSection');
+                this.roadmapContainer = document.getElementById('roadmapContainer');
+                this.errorContainer = document.getElementById('errorContainer');
+                
+                this.progressSection = document.getElementById('progressSection');
+                this.progressBar = document.getElementById('progressBar');
+                this.progressPercentage = document.getElementById('progressPercentage');
+                this.progressTitle = document.getElementById('progressTitle');
+                this.progressStatus = document.getElementById('progressStatus');
+                
+                this.roadmapContent = document.getElementById('roadmapContent');
+                this.errorText = document.getElementById('errorText');
+            }
+
+            bindEvents() {
+                this.generateBtn.addEventListener('click', () => this.generateRoadmap());
+                this.downloadBtn.addEventListener('click', () => this.downloadRoadmap());
+                
+                this.projectInput.addEventListener('input', () => {
+                    this.autoResizeTextarea();
+                });
+            }
+
+            autoResizeTextarea() {
+                this.projectInput.style.height = 'auto';
+                this.projectInput.style.height = Math.max(300, this.projectInput.scrollHeight) + 'px';
+            }
+
+            updateProgress(percentage, title, status) {
+                this.progressBar.style.width = `${percentage}%`;
+                this.progressPercentage.textContent = `${percentage}%`;
+                this.progressTitle.textContent = title;
+                this.progressStatus.textContent = status;
+            }
+
+            showProgress() {
+                this.progressSection.style.display = 'block';
+                this.generateBtn.disabled = true;
+                this.generateBtn.querySelector('.btn-text').textContent = 'Processing...';
+            }
+
+            hideProgress() {
+                this.progressSection.style.display = 'none';
+                this.generateBtn.disabled = false;
+                this.generateBtn.querySelector('.btn-text').textContent = 'Generate AI Roadmap';
+            }
+
+            simulateProgress() {
+                const steps = [
+                    { percentage: 15, title: 'Initializing AI Agents', status: 'Setting up Strategist and Refiner agents...' },
+                    { percentage: 30, title: 'Analyzing Project Requirements', status: 'Processing your project description...' },
+                    { percentage: 50, title: 'Strategist Creating Initial Roadmap', status: 'GPT-4 generating comprehensive project plan...' },
+                    { percentage: 70, title: 'Refiner Analyzing Roadmap', status: 'Gemini analyzing and optimizing structure...' },
+                    { percentage: 85, title: 'Final Refinement', status: 'Applying improvements and formatting...' },
+                    { percentage: 95, title: 'Finalizing Results', status: 'Preparing your refined roadmap...' }
+                ];
+
+                let currentStep = 0;
+                const progressInterval = setInterval(() => {
+                    if (currentStep < steps.length) {
+                        const step = steps[currentStep];
+                        this.updateProgress(step.percentage, step.title, step.status);
+                        currentStep++;
+                    } else {
+                        clearInterval(progressInterval);
+                    }
+                }, 2000);
+
+                return progressInterval;
+            }
+
+            async generateRoadmap() {
+                const projectDescription = this.projectInput.value.trim();
+                
+                if (!projectDescription) {
+                    this.showError('Please provide a project description');
+                    return;
+                }
+
+                this.hideAllSections();
+                this.showProgress();
+                
+                const progressInterval = this.simulateProgress();
+
+                try {
+                    const response = await fetch('/api/refine-project', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            project_description: projectDescription,
+                            detailed: true
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.error) {
+                        throw new Error(result.error);
+                    }
+
+                    clearInterval(progressInterval);
+                    this.updateProgress(100, 'Complete!', 'Your AI-generated roadmap is ready');
+                    
+                    setTimeout(() => {
+                        this.hideProgress();
+                        this.showRoadmap(result.roadmap);
+                    }, 1000);
+                    
+                } catch (error) {
+                    clearInterval(progressInterval);
+                    this.hideProgress();
+                    this.showError('Failed to generate roadmap: ' + error.message);
+                }
+            }
+
+            showRoadmap(roadmap) {
+                this.roadmapContent.innerHTML = this.markdownToHtml(roadmap);
+                this.roadmapContainer.style.display = 'block';
+                this.resultsSection.style.display = 'block';
+                
+                setTimeout(() => {
+                    this.downloadBtn.style.display = 'flex';
+                }, 500);
+
+                this.currentRoadmap = roadmap;
+                this.resultsSection.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            showError(message) {
+                this.errorText.textContent = message;
+                this.errorContainer.style.display = 'block';
+            }
+
+            hideAllSections() {
+                this.resultsSection.style.display = 'none';
+                this.errorContainer.style.display = 'none';
+                this.progressSection.style.display = 'none';
+                this.downloadBtn.style.display = 'none';
+            }
+
+            downloadRoadmap() {
+                if (!this.currentRoadmap) {
+                    this.showError('No roadmap available for download');
+                    return;
+                }
+
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+                const filename = `project_roadmap_${timestamp}.txt`;
+                
+                const blob = new Blob([this.currentRoadmap], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                this.showDownloadConfirmation();
+            }
+
+            showDownloadConfirmation() {
+                const confirmation = document.createElement('div');
+                confirmation.className = 'download-confirmation';
+                confirmation.innerHTML = `
+                    <i class="fas fa-check-circle"></i>
+                    <span>Roadmap downloaded successfully!</span>
+                `;
+                
+                document.body.appendChild(confirmation);
+                
+                setTimeout(() => {
+                    confirmation.classList.add('show');
+                }, 100);
+                
+                setTimeout(() => {
+                    confirmation.classList.remove('show');
+                    setTimeout(() => {
+                        document.body.removeChild(confirmation);
+                    }, 300);
+                }, 3000);
+            }
+
+            markdownToHtml(markdown) {
+                let html = markdown
+                    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                    .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+                    .replace(/\*(.*)\*/gim, '<em>$1</em>')
+                    .replace(/```([\s\S]*?)```/gim, '<pre><code>$1</code></pre>')
+                    .replace(/`([^`]*)`/gim, '<code>$1</code>')
+                    .replace(/^\- (.*$)/gim, '<li>$1</li>')
+                    .replace(/^\* (.*$)/gim, '<li>$1</li>')
+                    .replace(/\n\n/gim, '</p><p>')
+                    .replace(/\n/gim, '<br>');
+
+                html = html.replace(/(<li>.*<\/li>)/gims, '<ul>$1</ul>');
+                html = html.replace(/<\/ul>\s*<ul>/gim, '');
+
+                if (!html.startsWith('<h') && !html.startsWith('<ul') && !html.startsWith('<pre')) {
+                    html = '<p>' + html + '</p>';
+                }
+
+                return html;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new ProjectRefinerApp();
+        });
+    </script>
+</body>
+</html>

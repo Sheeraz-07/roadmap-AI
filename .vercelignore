@@ -1,0 +1,12 @@
+venv11/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+project_refiner.log
+*.log
