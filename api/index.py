@@ -10,7 +10,11 @@ from flask import Flask, render_template, request, jsonify
 # Add the parent directory to the path to import our modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from multi_agent_orchestrator import ProjectRefinerAPI
+try:
+    from multi_agent_orchestrator import ProjectRefinerAPI
+except ImportError as e:
+    logging.error(f"Failed to import ProjectRefinerAPI: {e}")
+    ProjectRefinerAPI = None
 
 # Configure logging for Vercel
 logging.basicConfig(level=logging.INFO)
@@ -22,8 +26,12 @@ app = Flask(__name__,
 
 # Initialize the Project Refiner API
 try:
-    project_api = ProjectRefinerAPI()
-    logger.info("Project Refiner API initialized successfully")
+    if ProjectRefinerAPI:
+        project_api = ProjectRefinerAPI()
+        logger.info("Project Refiner API initialized successfully")
+    else:
+        project_api = None
+        logger.error("ProjectRefinerAPI class not available")
 except Exception as e:
     logger.error(f"Failed to initialize Project Refiner API: {str(e)}")
     project_api = None
@@ -77,10 +85,8 @@ def refine_project():
         logger.error(f"Error processing project refinement: {str(e)}")
         return jsonify({'error': f'Processing failed: {str(e)}'}), 500
 
-# Vercel requires the app to be exported
-def handler(request, context):
-    """Vercel handler function"""
-    return app(request.environ, context.start_response)
+# Export the Flask app for Vercel
+app = app
 
 if __name__ == '__main__':
     app.run(debug=True)
