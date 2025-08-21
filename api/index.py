@@ -7,14 +7,33 @@ import logging
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 
-# Add the parent directory to the path to import our modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Get the directory containing this file (api/)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# Get the parent directory (project root)
+parent_dir = os.path.dirname(current_dir)
+# Add to Python path
+sys.path.insert(0, parent_dir)
+
+# Debug logging for import paths
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.info(f"Current directory: {current_dir}")
+logger.info(f"Parent directory: {parent_dir}")
+logger.info(f"Python path: {sys.path[:3]}")
 
 try:
     from multi_agent_orchestrator import ProjectRefinerAPI
+    logger.info("Successfully imported ProjectRefinerAPI")
 except ImportError as e:
-    logging.error(f"Failed to import ProjectRefinerAPI: {e}")
-    ProjectRefinerAPI = None
+    logger.error(f"Failed to import ProjectRefinerAPI: {e}")
+    try:
+        # Try alternative import paths
+        import multi_agent_orchestrator
+        ProjectRefinerAPI = multi_agent_orchestrator.ProjectRefinerAPI
+        logger.info("Successfully imported via alternative path")
+    except Exception as e2:
+        logger.error(f"Alternative import also failed: {e2}")
+        ProjectRefinerAPI = None
 
 # Configure logging for Vercel
 logging.basicConfig(level=logging.INFO)
