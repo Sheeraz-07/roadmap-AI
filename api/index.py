@@ -43,16 +43,37 @@ app = Flask(__name__,
            template_folder=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates'),
            static_folder=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static'))
 
-# Initialize the Project Refiner API
+# Initialize the Project Refiner API with detailed error handling
+project_api = None
 try:
     if ProjectRefinerAPI:
+        logger.info("Attempting to initialize ProjectRefinerAPI...")
         project_api = ProjectRefinerAPI()
         logger.info("Project Refiner API initialized successfully")
     else:
-        project_api = None
-        logger.error("ProjectRefinerAPI class not available")
+        logger.error("ProjectRefinerAPI class is None - import failed")
+        
+        # Try to list available files for debugging
+        try:
+            import os
+            files = os.listdir(parent_dir)
+            logger.info(f"Files in parent directory: {files}")
+            
+            # Check if required files exist
+            required_files = ['multi_agent_orchestrator.py', 'config.py', 'llm_agents.py']
+            for file in required_files:
+                if file in files:
+                    logger.info(f"✓ Found {file}")
+                else:
+                    logger.error(f"✗ Missing {file}")
+        except Exception as debug_e:
+            logger.error(f"Debug listing failed: {debug_e}")
+            
 except Exception as e:
     logger.error(f"Failed to initialize Project Refiner API: {str(e)}")
+    logger.error(f"Exception type: {type(e).__name__}")
+    import traceback
+    logger.error(f"Traceback: {traceback.format_exc()}")
     project_api = None
 
 @app.route('/')
