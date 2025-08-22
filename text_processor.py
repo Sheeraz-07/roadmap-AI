@@ -1,18 +1,18 @@
 """
 Text processing utilities for handling large inputs
 """
-import tiktoken
 from typing import List, Dict
 
 class TextProcessor:
     def __init__(self, chunk_size: int = 3000, overlap_size: int = 200):
         self.chunk_size = chunk_size
         self.overlap_size = overlap_size
-        self.encoding = tiktoken.get_encoding("cl100k_base")
     
     def count_tokens(self, text: str) -> int:
-        """Count tokens in text using tiktoken"""
-        return len(self.encoding.encode(text))
+        """Estimate tokens in text using simple word count approximation"""
+        # Rough approximation: 1 token ≈ 0.75 words
+        words = len(text.split())
+        return int(words / 0.75)
     
     def chunk_text(self, text: str) -> List[str]:
         """
