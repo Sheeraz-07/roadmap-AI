@@ -5,6 +5,7 @@ import openai
 import google.generativeai as genai
 from typing import Dict, Optional, List
 from config import Config
+import logging
 
 # Optional import for component searcher
 try:
@@ -13,6 +14,8 @@ try:
 except ImportError:
     COMPONENT_SEARCH_AVAILABLE = False
     ComponentSearcher = None
+
+logger = logging.getLogger(__name__)
 
 class StrategistAgent:
     """GPT-4.1 Agent acting as the Strategist - Initial high-level analysis and roadmap creation"""
@@ -26,138 +29,53 @@ class StrategistAgent:
         self.component_searcher = ComponentSearcher() if COMPONENT_SEARCH_AVAILABLE else None
     
     def generate_initial_roadmap(self, user_input: str) -> str:
-        """Generate the initial project roadmap based on user requirements with real-time component search"""
+        """
+        Generate initial project roadmap based on user requirements
         
-        # Extract components from user input for pricing research
-        component_keywords = self._extract_components(user_input)
-        component_data = {}
-        
-        # Search for each component (if component searcher is available)
-        if self.component_searcher:
-            for component in component_keywords:
-                search_result = self.component_searcher.search_component(component)
-                component_data[component] = search_result
+        Args:
+            user_input: User's project description and requirements
             
-            # Get cost analysis
-            cost_analysis = self.component_searcher.get_cost_analysis(component_keywords)
-        else:
-            cost_analysis = {}
+        Returns:
+            Detailed project roadmap as string
+        """
         
-        system_prompt = """You are an expert electronics engineer and project strategist with 15+ years experience in IoT systems. You MUST provide extremely detailed, specific, and actionable project roadmaps with REAL component specifications and current market pricing.
-
-MANDATORY REQUIREMENTS - NO GENERIC RESPONSES:
-1. NEVER use placeholder text like "Model XYZ" or "[List specific sensors]" 
-2. ALWAYS provide EXACT component model numbers (e.g., "DS18B20 Waterproof Temperature Sensor")
-3. ALWAYS include REAL current pricing from actual suppliers (e.g., "$12.95 from Adafruit SKU 381")
-4. ALWAYS provide specific technical specifications (voltage, current, accuracy, interface protocols)
-5. ALWAYS include detailed supplier information with part numbers and availability
-6. ALWAYS provide step-by-step implementation instructions with code examples
-7. ALWAYS include detailed wiring diagrams and pin connections
-
-COMPONENT SPECIFICATIONS REQUIREMENTS:
-For EVERY component mentioned, you MUST provide:
-- Exact model number and manufacturer
-- Current price from at least 2 suppliers (Adafruit, SparkFun, Amazon, DigiKey)
-- Technical specifications (voltage, current, accuracy, interface)
-- Supplier part numbers and availability status
-- Alternative options with price comparisons
-- Technical justification for selection
-
-AQUARIUM PROJECT SPECIFIC REQUIREMENTS:
-- ESP32 DevKit C V4 ($9.95 Adafruit, $12.99 SparkFun) - specify exact model
-- DS18B20 Waterproof Temperature Sensor ($9.95 Adafruit SKU 381)
-- Atlas Scientific pH Kit ($168 Atlas Scientific) or cheaper DFRobot pH Sensor ($29.90)
-- TDS/EC Sensor for water quality ($15.99 DFRobot)
-- Ultrasonic Water Level Sensor JSN-SR04T ($8.99 Amazon)
-- 5V Water Pump ($12.99 Amazon) with relay module
-- 12V Aquarium Heater with SSR control ($25.99)
-- OLED Display SSD1306 ($14.95 Adafruit)
-
-IMPLEMENTATION REQUIREMENTS:
-1. Provide complete Arduino IDE setup with exact library versions
-2. Include full wiring diagrams with pin assignments
-3. Provide complete code examples with explanations
-4. Include calibration procedures with expected values
-5. Provide troubleshooting guide with common issues and solutions
-6. Include power consumption calculations and battery backup options
-7. Provide maintenance schedule with specific tasks and intervals
-
-FORMAT REQUIREMENTS:
-Use this EXACT structure with NO generic placeholders:
-1. Executive Summary (specific project goals and success metrics)
-2. Component List & Pricing (detailed table with exact models and prices)
-3. Cost Analysis (budget vs premium builds with exact totals)
-4. Technical Architecture (detailed system diagram and data flow)
-5. Development Environment Setup (step-by-step Arduino IDE configuration)
-6. Implementation Guide (complete code examples and wiring)
-7. Testing & Calibration (specific procedures and expected values)
-8. Deployment Guide (installation and configuration steps)
-9. Maintenance & Troubleshooting (schedules and common issues)
-10. Future Enhancements (specific upgrade options with costs)
-
-ABSOLUTELY NO GENERIC TEXT ALLOWED - Every specification must be real and actionable."""
-
-        # Include component research data in the prompt
-        component_info = ""
-        if component_data:
-            component_info = f"\nCOMPONENT RESEARCH DATA:\n"
-            for comp_name, comp_data in component_data.items():
-                component_info += f"\n{comp_name}:\n"
-                if comp_data.get('recommended'):
-                    rec = comp_data['recommended']
-                    component_info += f"- Recommended: {rec.get('name', 'N/A')} - ${rec.get('price', 'N/A')} from {rec.get('supplier', 'N/A')}\n"
-                if comp_data.get('alternatives'):
-                    component_info += f"- Alternatives: {len(comp_data['alternatives'])} options found\n"
+        # Extract components for pricing research if applicable
+        component_data = ""
         
-        cost_info = ""
-        if cost_analysis:
-            cost_info = f"\nCOST ANALYSIS:\n"
-            cost_info += f"- Estimated Total: ${cost_analysis.get('total_estimated_cost', 'N/A')}\n"
-            cost_info += f"- Budget Build: ${cost_analysis.get('budget_build_cost', 'N/A')}\n"
-            cost_info += f"- Premium Build: ${cost_analysis.get('premium_build_cost', 'N/A')}\n"
-
-        user_prompt = f"""CRITICAL: Create a comprehensive aquarium monitoring system roadmap with ZERO generic placeholders.
+        if self.component_searcher:
+            try:
+                components = self.component_searcher.extract_components(user_input)
+                if components:
+                    logger.info(f"Found {len(components)} components to research: {components}")
+                    pricing_data = self.component_searcher.search_components(components)
+                    if pricing_data:
+                        component_data = f"\n\nCOMPONENT PRICING DATA:\n{pricing_data}"
+                        logger.info("Successfully retrieved component pricing data")
+            except Exception as e:
+                logger.warning(f"Could not retrieve component pricing: {e}")
+        
+        # Determine project type and create appropriate system prompt
+        project_type = self._detect_project_type(user_input)
+        system_prompt = self._get_system_prompt_for_project_type(project_type)
+        
+        user_prompt = f"""Create a comprehensive project roadmap for the following requirements:
 
 PROJECT REQUIREMENTS: {user_input}
 
-{component_info}
-{cost_info}
+INSTRUCTIONS:
+1. Analyze the project requirements and create a detailed, actionable roadmap
+2. Include specific technologies, frameworks, and tools (NO generic placeholders)
+3. Provide realistic timelines and milestones
+4. Include technical architecture and implementation details
+5. Consider scalability, security, and best practices
+6. If hardware/IoT components are involved, include specific part numbers and pricing
+7. Structure the roadmap with clear phases and deliverables
 
-MANDATORY SPECIFICATIONS - NO EXCEPTIONS:
-1. Provide EXACT component models: "ESP32 DevKit C V4" not "ESP32 module"
-2. Include REAL pricing: "$9.95 from Adafruit SKU 3405" not "approximately $10"
-3. Specify EXACT technical specs: "3.3V, 240MHz, WiFi 802.11b/g/n" not "low power"
-4. Include REAL supplier part numbers and availability
-5. Provide COMPLETE code examples with library versions
-6. Include DETAILED wiring diagrams with pin assignments
-7. Specify EXACT calibration procedures with expected values
+{component_data}
 
-AQUARIUM SYSTEM COMPONENTS TO SPECIFY:
-- Microcontroller: ESP32 DevKit C V4 ($9.95 Adafruit SKU 3405, $8.99 Amazon)
-- Temperature: DS18B20 Waterproof ($9.95 Adafruit SKU 381)
-- pH Sensor: Atlas Scientific pH Kit ($168) OR DFRobot Gravity pH Sensor ($29.90 SKU SEN0161)
-- Water Level: JSN-SR04T Ultrasonic ($8.99 Amazon B01COSN7O6)
-- Display: SSD1306 OLED 128x64 ($14.95 Adafruit SKU 326)
-- Pump Control: 5V Relay Module ($3.99 Amazon) + 12V Water Pump ($15.99)
-- Power: 12V 3A Power Supply ($12.99 Amazon)
-
-IMPLEMENTATION DETAILS REQUIRED:
-- Arduino IDE 2.2.1 setup with ESP32 Board Package 2.0.11
-- Specific libraries: OneWire 2.3.7, DallasTemperature 3.11.0, WiFi 2.0.0
-- Complete pin wiring: Temperature sensor on GPIO 4, pH on A0, etc.
-- Code examples with error handling and WiFi connectivity
-- Calibration: pH 4.0, 7.0, 10.0 buffer solutions procedure
-- Power consumption: ESP32 (240mA), sensors (50mA total), pump (500mA)
-
-COST BREAKDOWN REQUIRED:
-- Budget Build: $89.90 total (specify each component cost)
-- Premium Build: $245.50 total (with Atlas Scientific sensors)
-- Operating costs: $15/year (calibration solutions, maintenance)
-
-NO GENERIC TEXT ALLOWED. Every specification must be implementable immediately."""
+Provide a detailed roadmap that a developer can immediately start implementing."""
 
         try:
-            # Use legacy OpenAI client
             response = openai.ChatCompletion.create(
                 model=self.model,
                 messages=[
@@ -167,43 +85,168 @@ NO GENERIC TEXT ALLOWED. Every specification must be implementable immediately."
                 temperature=self.temperature,
                 max_tokens=4000
             )
+            
             return response.choices[0].message.content
+            
         except Exception as e:
+            logger.error(f"Strategist Agent error: {str(e)}")
             raise Exception(f"Strategist Agent error: {str(e)}")
     
-    def _extract_components(self, user_input: str) -> List[str]:
-        """Extract component keywords from user input for pricing research"""
-        # Common IoT/electronics components keywords
-        component_keywords = []
-        
-        # Define component patterns
-        patterns = {
-            'microcontroller': ['esp32', 'arduino', 'raspberry pi', 'microcontroller'],
-            'sensors': ['temperature', 'ph', 'turbidity', 'water level', 'motion', 'camera', 'sensor'],
-            'actuators': ['pump', 'heater', 'motor', 'servo', 'relay'],
-            'connectivity': ['wifi', 'bluetooth', 'ethernet', 'gsm'],
-            'display': ['lcd', 'oled', 'display', 'screen'],
-            'power': ['battery', 'power supply', 'solar'],
-            'storage': ['sd card', 'memory', 'storage']
-        }
-        
+    def _detect_project_type(self, user_input: str) -> str:
+        """Detect the type of project to customize the system prompt"""
         user_lower = user_input.lower()
         
-        # Extract based on project type
-        if 'aquarium' in user_lower:
-            component_keywords.extend(['ESP32', 'DS18B20 Temperature Sensor', 'pH Sensor', 'Turbidity Sensor', 'Water Level Sensor', 'Water Pump', 'Heater Controller'])
-        elif 'doorbell' in user_lower:
-            component_keywords.extend(['ESP32-CAM', 'PIR Motion Sensor', 'Speaker', 'Microphone', 'Push Button'])
-        elif 'smart home' in user_lower:
-            component_keywords.extend(['ESP32', 'Temperature Sensor', 'Humidity Sensor', 'Relay Module', 'LED Strip'])
-        else:
-            # Generic extraction
-            for category, keywords in patterns.items():
-                for keyword in keywords:
-                    if keyword in user_lower:
-                        component_keywords.append(keyword.title())
+        # IoT/Hardware project detection
+        iot_keywords = ['iot', 'sensor', 'arduino', 'raspberry pi', 'esp32', 'monitoring', 'smart', 'automation']
+        if any(keyword in user_lower for keyword in iot_keywords):
+            return 'iot_hardware'
         
-        return list(set(component_keywords))  # Remove duplicates
+        # Mobile app detection
+        mobile_keywords = ['mobile app', 'ios', 'android', 'smartphone', 'app store', 'mobile']
+        if any(keyword in user_lower for keyword in mobile_keywords):
+            return 'mobile_app'
+        
+        # Web platform detection
+        web_keywords = ['website', 'web app', 'dashboard', 'portal', 'online platform', 'web']
+        if any(keyword in user_lower for keyword in web_keywords):
+            return 'web_platform'
+        
+        # AI/ML project detection
+        ai_keywords = ['ai', 'machine learning', 'chatbot', 'recommendation', 'prediction', 'nlp']
+        if any(keyword in user_lower for keyword in ai_keywords):
+            return 'ai_ml'
+        
+        # E-commerce detection
+        ecommerce_keywords = ['e-commerce', 'marketplace', 'shopping', 'payment', 'cart', 'store']
+        if any(keyword in user_lower for keyword in ecommerce_keywords):
+            return 'ecommerce'
+        
+        return 'general_software'
+    
+    def _get_system_prompt_for_project_type(self, project_type: str) -> str:
+        """Get appropriate system prompt based on project type"""
+        
+        base_prompt = """You are an expert software architect and project strategist with 15+ years of experience in full-stack development, system design, and project management."""
+        
+        if project_type == 'iot_hardware':
+            return f"""{base_prompt}
+
+SPECIALIZATION: IoT and Hardware Systems
+- Expert in microcontrollers (Arduino, ESP32, Raspberry Pi)
+- Extensive knowledge of sensors, actuators, and electronic components
+- Experience with IoT protocols (MQTT, HTTP, WebSocket)
+- Skilled in embedded programming (C++, Python, MicroPython)
+- Knowledge of PCB design and hardware integration
+- Experience with cloud IoT platforms (AWS IoT, Google Cloud IoT)
+
+MANDATORY REQUIREMENTS:
+- Provide SPECIFIC component part numbers and suppliers
+- Include detailed wiring diagrams and connection specifications
+- Specify exact sensor models and their technical specifications
+- Include realistic pricing for all hardware components
+- Provide code examples for microcontroller programming
+- Consider power consumption and battery life
+- Include enclosure and mounting considerations"""
+
+        elif project_type == 'mobile_app':
+            return f"""{base_prompt}
+
+SPECIALIZATION: Mobile Application Development
+- Expert in iOS (Swift, SwiftUI) and Android (Kotlin, Java) development
+- Experience with cross-platform frameworks (React Native, Flutter)
+- Knowledge of mobile UI/UX best practices
+- Skilled in mobile backend integration and APIs
+- Experience with app store deployment and optimization
+- Understanding of mobile security and performance optimization
+
+MANDATORY REQUIREMENTS:
+- Specify target platforms (iOS, Android, or both)
+- Include specific frameworks and development tools
+- Provide detailed UI/UX wireframes and user flows
+- Include backend API specifications
+- Consider offline functionality and data synchronization
+- Include app store submission requirements
+- Specify testing strategies for different devices"""
+
+        elif project_type == 'web_platform':
+            return f"""{base_prompt}
+
+SPECIALIZATION: Web Platform Development
+- Expert in modern web frameworks (React, Vue.js, Angular, Next.js)
+- Extensive backend experience (Node.js, Python, Java, .NET)
+- Database design and optimization (SQL, NoSQL)
+- Cloud deployment and DevOps (AWS, Azure, GCP)
+- Web security and performance optimization
+- API design and microservices architecture
+
+MANDATORY REQUIREMENTS:
+- Specify exact tech stack (frontend, backend, database)
+- Include detailed database schema design
+- Provide API endpoint specifications
+- Include authentication and authorization strategy
+- Consider scalability and performance requirements
+- Include deployment and hosting recommendations
+- Specify security measures and compliance requirements"""
+
+        elif project_type == 'ai_ml':
+            return f"""{base_prompt}
+
+SPECIALIZATION: AI and Machine Learning Systems
+- Expert in ML frameworks (TensorFlow, PyTorch, Scikit-learn)
+- Experience with NLP, computer vision, and recommendation systems
+- Knowledge of data preprocessing and feature engineering
+- Skilled in model deployment and MLOps
+- Experience with cloud AI services (AWS SageMaker, Google AI Platform)
+- Understanding of AI ethics and bias mitigation
+
+MANDATORY REQUIREMENTS:
+- Specify exact ML frameworks and libraries
+- Include data collection and preprocessing strategies
+- Provide model architecture and training approach
+- Include evaluation metrics and validation methods
+- Consider model deployment and serving infrastructure
+- Include data privacy and security considerations
+- Specify monitoring and model maintenance strategies"""
+
+        elif project_type == 'ecommerce':
+            return f"""{base_prompt}
+
+SPECIALIZATION: E-commerce Platform Development
+- Expert in e-commerce frameworks (Shopify, WooCommerce, Magento)
+- Experience with payment processing (Stripe, PayPal, Square)
+- Knowledge of inventory management and order fulfillment
+- Skilled in e-commerce security and PCI compliance
+- Experience with marketing automation and analytics
+- Understanding of SEO and conversion optimization
+
+MANDATORY REQUIREMENTS:
+- Specify e-commerce platform or custom solution approach
+- Include detailed payment gateway integration
+- Provide inventory management system design
+- Include order processing and fulfillment workflow
+- Consider security and PCI compliance requirements
+- Include marketing and analytics integration
+- Specify mobile responsiveness and performance optimization"""
+
+        else:  # general_software
+            return f"""{base_prompt}
+
+SPECIALIZATION: General Software Development
+- Expert in multiple programming languages and frameworks
+- Experience with system architecture and design patterns
+- Knowledge of database design and API development
+- Skilled in testing, deployment, and maintenance
+- Experience with agile development methodologies
+- Understanding of software security and performance optimization
+
+MANDATORY REQUIREMENTS:
+- Analyze requirements and recommend appropriate tech stack
+- Provide detailed system architecture and component design
+- Include specific frameworks, libraries, and tools
+- Consider scalability, maintainability, and performance
+- Include testing strategy and quality assurance
+- Provide deployment and hosting recommendations
+- Consider security and data protection requirements"""
     
     def refine_roadmap(self, original_roadmap: str, refiner_feedback: str) -> str:
         """Refine the roadmap based on Refiner's feedback"""
